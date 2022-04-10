@@ -71,13 +71,23 @@ screen = curses.initscr()
 curses.noecho()
 curses.cbreak()
 screen.keypad(True)
+curses.curs_set(0)
+
+maxlen_torrentname = f'{len(max(search_list, key=lambda x: len(x["torrent_name"]))["torrent_name"])}s'
+maxlen_torrentsize = f'{len(max(search_list, key=lambda x: len(x["torrent_size"]))["torrent_size"])}s'
+maxlen_torrentseeder = f'{len(max(search_list, key=lambda x: len(x["torrent_seeder"]))["torrent_seeder"])}s'
+maxlen_torrentleecher = f'{len(max(search_list, key=lambda x: len(x["torrent_leecher"]))["torrent_leecher"])}s'
 
 current_index = 0
 max_index = len(search_list) - 1
 while True:
     item = search_list[current_index]
-    screen.addstr(f'{item["torrent_name"]} {item["torrent_size"]} ')
-    screen.addstr(f'{item["torrent_seeder"]} {item["torrent_leecher"]}')
+    for i, item in enumerate(search_list):
+        screen.addstr(i, 0, '')
+        screen.addstr(f'{item["torrent_name"]:{maxlen_torrentname}} ', 0 if i != current_index else curses.A_BOLD)
+        screen.addstr(f'{item["torrent_size"]:{maxlen_torrentsize}} ', 0 if i != current_index else curses.A_BOLD)
+        screen.addstr(f'{item["torrent_seeder"]:{maxlen_torrentseeder}} ', 0 if i != current_index else curses.A_BOLD)
+        screen.addstr(f'{item["torrent_leecher"]:{maxlen_torrentleecher}} ', 0 if i != current_index else curses.A_BOLD)
     c = screen.getch()
     screen.clear()
     screen.refresh()
@@ -85,9 +95,9 @@ while True:
         break
     elif c == 113:
         break
-    elif c == 259:
+    elif c == curses.KEY_UP or c == ord('k'):
         current_index -= 1 if current_index > 0 else 0
-    elif c == 258:
+    elif c == curses.KEY_DOWN or c == ord('j'):
         current_index += 1 if current_index < max_index else 0
 
 curses.endwin()
