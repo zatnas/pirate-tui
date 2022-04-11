@@ -35,10 +35,11 @@ else:
     with open(lastmirror_file, "r") as f:
         mirror = f.read()
 
+search_text = "spiderman"
 piratesearch_file = "piratesearch.txt"
 # piratebay/search/SEARCH/PAGE/SORT
 if not os.path.exists(piratesearch_file):
-    r = requests.get(f'{mirror}/search/spiderman')
+    r = requests.get(f'{mirror}/search/{search_text}')
     piratesearch = r.text
     with open(piratesearch_file, "w") as f:
         f.write(piratesearch)
@@ -67,6 +68,10 @@ for r in re.finditer(r"<tr>.*?vertTh.*?</tr>", piratesearch, re.DOTALL):
     search_list = search_list + [m.groupdict()]
 
 screen = curses.initscr()
+curses.start_color()
+curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+
+mode = "select"
 
 curses.noecho()
 curses.cbreak()
@@ -78,26 +83,43 @@ maxlen_torrentsize = f'{len(max(search_list, key=lambda x: len(x["torrent_size"]
 maxlen_torrentseeder = f'{len(max(search_list, key=lambda x: len(x["torrent_seeder"]))["torrent_seeder"])}s'
 maxlen_torrentleecher = f'{len(max(search_list, key=lambda x: len(x["torrent_leecher"]))["torrent_leecher"])}s'
 
+c = None
 current_index = 0
 max_index = len(search_list) - 1
 while True:
+    screen.addstr(0, 0, str(c))
     item = search_list[current_index]
+    list_offset = 10
     for i, item in enumerate(search_list):
-        screen.addstr(i, 0, '')
-        screen.addstr(f'{item["torrent_name"]:{maxlen_torrentname}} ', 0 if i != current_index else curses.A_BOLD)
-        screen.addstr(f'{item["torrent_size"]:{maxlen_torrentsize}} ', 0 if i != current_index else curses.A_BOLD)
-        screen.addstr(f'{item["torrent_seeder"]:{maxlen_torrentseeder}} ', 0 if i != current_index else curses.A_BOLD)
-        screen.addstr(f'{item["torrent_leecher"]:{maxlen_torrentleecher}} ', 0 if i != current_index else curses.A_BOLD)
+        selected_item = i == current_index
+        appearance = 0
+        if selected_item:
+            appearance = curses.A_BOLD
+        torrent_name = f'{item["torrent_name"]:{maxlen_torrentname}} '
+        torrent_size = f'{item["torrent_size"]:{maxlen_torrentsize}} '
+        torrent_seeder = f'{item["torrent_seeder"]:{maxlen_torrentseeder}} '
+        torrent_leecher = f'{item["torrent_leecher"]:{maxlen_torrentleecher}} '
+        screen.addstr(i + list_offset, 0, '')
+        screen.addstr(torrent_name, appearance)
+        screen.addstr(torrent_size, appearance)
+        screen.addstr(torrent_seeder, appearance)
+        screen.addstr(torrent_leecher, appearance)
     c = screen.getch()
     screen.clear()
     screen.refresh()
-    if c == 27:
-        break
-    elif c == 113:
-        break
-    elif c == curses.KEY_UP or c == ord('k'):
-        current_index -= 1 if current_index > 0 else 0
-    elif c == curses.KEY_DOWN or c == ord('j'):
-        current_index += 1 if current_index < max_index else 0
+    if mode == "select":
+        if c == 27 or c == ord('q'):
+            break
+        elif c == curses.KEY_UP or c == ord('k'):
+            current_index -= 1 if current_index > 0 else 0
+        elif c == curses.KEY_DOWN or c == ord('j'):
+            current_index += 1 if current_index < max_index else 0
+        elif c == ord('s'):
+            mode = "search"
+    elif mode == "search":
+        if c == 27:
+            mode = "select"
+        elif c == 10:
+            current_index += 1 if current_index < max_index else 0
 
 curses.endwin()
