@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/python
 import re
 import curses
+import curses.textpad
 import requests
 import os.path
 import urllib.parse
@@ -177,6 +178,10 @@ def main(screen: 'curses._CursesWindow'):
     win2.clear()
     win2.border("|", "|", "-", "-", "+", "+", "+", "+")
     win2.refresh()
+    searchwin = curses.newwin(3, cols - 12, 1, 10)
+    searchwin.clear()
+    searchwin.border("|", "|", "-", "-", "+", "+", "+", "+")
+    searchwin.refresh()
 
     c = None
     current_index = 0
@@ -200,8 +205,12 @@ def main(screen: 'curses._CursesWindow'):
         win2.refresh()
         win1.border("|", "|", "-", "-", "+", "+", "+", "+")
         win1.addstr(1, 1, str(c))
+        win1.addstr(2, 2, "Search: ")
         win1.refresh()
+        searchwin.border("|", "|", "-", "-", "+", "+", "+", "+")
+        searchwin.refresh()
         c = screen.getch()
+        searchwin.clear()
         win2.clear()
         win1.clear()
         if mode == "select":
