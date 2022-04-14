@@ -162,6 +162,8 @@ def main(screen: 'curses._CursesWindow'):
 
     search_list = tpb_search_parse(piratesearch)
 
+    max_tcat = f'{search_list.max_tct}s'
+    max_tscat = f'{search_list.max_tsc}s'
     max_tname = f'{search_list.max_tnm}s'
     max_tsize = f'{search_list.max_tsz}s'
     max_tseeder = f'{search_list.max_tsd}s'
@@ -206,6 +208,8 @@ def main(screen: 'curses._CursesWindow'):
             if selected_item:
                 attribute = curses.A_BOLD
             torrent_details = [
+                f'{item.torrent_subcategory:{max_tscat}} ',
+                f'{item.torrent_category:{max_tcat}} ',
                 f'{item.torrent_name:{max_tname}} ',
                 f'{item.torrent_size:{max_tsize}} ',
                 f'{item.torrent_seeder:{max_tseeder}} ',
