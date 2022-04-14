@@ -8,6 +8,12 @@ import urllib.parse
 
 from pprint import pprint
 
+FILENAMES = {
+    "mirror": "mirror.txt",
+    "proxy": "proxy.txt",
+    "search": "search.txt",
+}
+
 
 class TorrentItem(object):
     def __init__(self, groupdict):
@@ -91,15 +97,38 @@ def file_read(path: str):
         return f.read()
 
 
+def tpb_search(hostname: str, search: str):
+    search_file = FILENAMES["search"]
+    search_urlencode = urllib.parse.quote(search)
+    r = requests.get(f'{hostname}/search/{search_urlencode}')
+    return file_write(search_file, r.text)
+
+
+def tpb_search_parse(tpb_search: str):
+    search_list = TorrentItems()
+    tpb_search = tpb_search.replace('&nbsp;', ' ')
+    for r in re.finditer(r"<tr>.*?vertTh.*?</tr>", tpb_search, re.DOTALL):
+        r_raw = r.group(0)
+        m = re.match(r"""
+            .*?<a.*?>(?P<torrent_subcategory>.*?)</a.*?
+            <a.*?>(?P<torrent_category>.*?)</a.*?
+            detName.*?href="(?P<torrent_link>.*?)".*?
+            >(?P<torrent_name>.*?)<.*?
+            href="(?P<torrent_magnet>magnet.*?)".*?
+            Uploaded\s*(?P<torrent_date>.*?),.*?
+            Size\s*(?P<torrent_size>.*?),.*?
+            ULed\s*by.*?
+            (<a.*?href="(?P<author_link>.*?)".*?|<i)>
+            (?P<author_name>.*?)<.*?
+            <td.*?>(?P<torrent_seeder>.*?)<.*?
+            <td.*?>(?P<torrent_leecher>.*?)<.*?
+        """, r_raw, re.DOTALL | re.VERBOSE)
+        search_list.add(TorrentItem(m.groupdict()))
+    return search_list
 def main(screen: 'curses._CursesWindow'):
-    filenames = {
-        "mirror": "mirror.txt",
-        "proxy": "proxy.txt",
-        "search": "search.txt",
-    }
-    mirror_file = filenames["mirror"]
-    proxy_file = filenames["proxy"]
-    search_file = filenames["search"]
+    mirror_file = FILENAMES["mirror"]
+    proxy_file = FILENAMES["proxy"]
+    search_file = FILENAMES["search"]
 
     if file_exists(mirror_file):
         mirror = file_read(mirror_file)
@@ -129,31 +158,9 @@ def main(screen: 'curses._CursesWindow'):
     if file_exists(search_file):
         piratesearch = file_read(search_file)
     else:
-        search_urlencode = urllib.parse.quote(search_text)
-        r = requests.get(
-            f'{mirror}/search/{search_urlencode}'
-        )
-        piratesearch = file_write(search_file, r.text)
+        piratesearch = tpb_search(mirror, search_text)
 
-    search_list = TorrentItems()
-    piratesearch = piratesearch.replace('&nbsp;', ' ')
-    for r in re.finditer(r"<tr>.*?vertTh.*?</tr>", piratesearch, re.DOTALL):
-        r_raw = r.group(0)
-        m = re.match(r"""
-            .*?<a.*?>(?P<torrent_subcategory>.*?)</a.*?
-            <a.*?>(?P<torrent_category>.*?)</a.*?
-            detName.*?href="(?P<torrent_link>.*?)".*?
-            >(?P<torrent_name>.*?)<.*?
-            href="(?P<torrent_magnet>magnet.*?)".*?
-            Uploaded\s*(?P<torrent_date>.*?),.*?
-            Size\s*(?P<torrent_size>.*?),.*?
-            ULed\s*by.*?
-            (<a.*?href="(?P<author_link>.*?)".*?|<i)>
-            (?P<author_name>.*?)<.*?
-            <td.*?>(?P<torrent_seeder>.*?)<.*?
-            <td.*?>(?P<torrent_leecher>.*?)<.*?
-        """, r_raw, re.DOTALL | re.VERBOSE)
-        search_list.add(TorrentItem(m.groupdict()))
+    search_list = tpb_search_parse(piratesearch)
 
     max_tname = f'{search_list.max_tnm}s'
     max_tsize = f'{search_list.max_tsz}s'
@@ -230,11 +237,11 @@ def main(screen: 'curses._CursesWindow'):
                 curses.curs_set(1)
                 search_text = searchbox.edit()
                 curses.curs_set(0)
-        elif mode == "search":
-            if c == 27:
-                mode = "select"
-            elif c == 10:
-                current_index += 1 if current_index < max_index else 0
+                current_index = 0
+                search_list = tpb_search_parse(
+                    tpb_search(mirror, search_text)
+                )
+                max_index = len(search_list) - 1
 
 
 curses.wrapper(main)
