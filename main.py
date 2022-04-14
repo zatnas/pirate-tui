@@ -35,7 +35,7 @@ class TorrentItem(object):
 
 class TorrentItems(object):
     def __init__(self):
-        self._items:list[TorrentItem] = []
+        self._items: list[TorrentItem] = []
         self.max_tct = 0
         self.max_tsc = 0
         self.max_tln = 0
@@ -125,6 +125,8 @@ def tpb_search_parse(tpb_search: str):
         """, r_raw, re.DOTALL | re.VERBOSE)
         search_list.add(TorrentItem(m.groupdict()))
     return search_list
+
+
 def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
     proxy_file = FILENAMES["proxy"]
@@ -191,7 +193,7 @@ def main(screen: 'curses._CursesWindow'):
     searchcontainer.clear()
     searchcontainer.border("|", "|", "-", "-", "+", "+", "+", "+")
     searchcontainer.refresh()
-    searchwin = curses.newwin(1, cols - 14 , 2, 11)
+    searchwin = curses.newwin(1, cols - 14, 2, 11)
     searchwin.clear()
     searchwin.refresh()
     searchbox = curses.textpad.Textbox(searchwin)
@@ -216,7 +218,7 @@ def main(screen: 'curses._CursesWindow'):
                 f'{item.torrent_leecher:{max_tleecher}} ',
             ]
             win2.addstr(i+1, 1, "")
-            [ win2.addstr(d, attribute) for d in torrent_details ]
+            [win2.addstr(d, attribute) for d in torrent_details]
         win2.refresh()
         win1.border("|", "|", "-", "-", "+", "+", "+", "+")
         win1.addstr(1, 1, str(c))
