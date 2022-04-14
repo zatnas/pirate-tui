@@ -178,10 +178,14 @@ def main(screen: 'curses._CursesWindow'):
     win2.clear()
     win2.border("|", "|", "-", "-", "+", "+", "+", "+")
     win2.refresh()
-    searchwin = curses.newwin(3, cols - 12, 1, 10)
+    searchcontainer = curses.newwin(3, cols - 12, 1, 10)
+    searchcontainer.clear()
+    searchcontainer.border("|", "|", "-", "-", "+", "+", "+", "+")
+    searchcontainer.refresh()
+    searchwin = curses.newwin(1, cols - 14 , 2, 11)
     searchwin.clear()
-    searchwin.border("|", "|", "-", "-", "+", "+", "+", "+")
     searchwin.refresh()
+    searchbox = curses.textpad.Textbox(searchwin)
 
     c = None
     current_index = 0
@@ -207,9 +211,11 @@ def main(screen: 'curses._CursesWindow'):
         win1.addstr(1, 1, str(c))
         win1.addstr(2, 2, "Search: ")
         win1.refresh()
-        searchwin.border("|", "|", "-", "-", "+", "+", "+", "+")
+        searchcontainer.border("|", "|", "-", "-", "+", "+", "+", "+")
+        searchcontainer.refresh()
         searchwin.refresh()
         c = screen.getch()
+        searchcontainer.clear()
         searchwin.clear()
         win2.clear()
         win1.clear()
@@ -221,7 +227,9 @@ def main(screen: 'curses._CursesWindow'):
             elif c == curses.KEY_DOWN or c == ord('j'):
                 current_index += 1 if current_index < max_index else 0
             elif c == ord('s'):
-                mode = "search"
+                curses.curs_set(1)
+                search_text = searchbox.edit()
+                curses.curs_set(0)
         elif mode == "search":
             if c == 27:
                 mode = "select"
