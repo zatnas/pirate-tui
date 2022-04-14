@@ -224,6 +224,7 @@ def main(screen: 'curses._CursesWindow'):
         win1.refresh()
         searchcontainer.border("|", "|", "-", "-", "+", "+", "+", "+")
         searchcontainer.refresh()
+        searchwin.addstr(0, 0, search_text)
         searchwin.refresh()
         c = screen.getch()
         searchcontainer.clear()
@@ -238,6 +239,8 @@ def main(screen: 'curses._CursesWindow'):
             elif c == curses.KEY_DOWN or c == ord('j'):
                 current_index += 1 if current_index < max_index else 0
             elif c == ord('s'):
+                searchwin.clear()
+                searchwin.refresh()
                 curses.curs_set(1)
                 search_text = searchbox.edit()
                 curses.curs_set(0)
