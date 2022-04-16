@@ -249,17 +249,19 @@ def main(screen: 'curses._CursesWindow'):
 
     _, cols = screen.getmaxyx()
 
-    win1 = curses.newwin(10, cols, 0, 0)
-    win2 = curses.newwin(20, cols, 9, 0)
-    searchcontainer = curses.newwin(3, cols - 12, 1, 10)
-    searchwin = curses.newwin(1, cols - 14, 2, 11)
+    win1 = curses.newwin(9, cols, 0, 0)
+    win2 = curses.newwin(20, cols, 8, 0)
+    searchcontainer = curses.newwin(3, cols - 14, 1, 12)
+    searchwin = curses.newwin(1, cols - 16, 2, 13)
     searchbox = curses.textpad.Textbox(searchwin)
+    categorywin = curses.newwin(3, cols - 14, 5, 12)
 
     windows = [
         Window(win1, True),
         Window(win2, True),
         Window(searchcontainer, True),
         Window(searchwin, False),
+        Window(categorywin, True),
     ]
 
     def draw_windows():
@@ -289,6 +291,7 @@ def main(screen: 'curses._CursesWindow'):
             ]]
         win1.addstr(1, 1, str(c))
         win1.addstr(2, 2, "Search: ")
+        win1.addstr(6, 2, "Category: ")
         searchwin.addstr(0, 0, search_text)
         draw_windows()
         c = screen.getch()
