@@ -157,6 +157,41 @@ def tpb_search(
     return file_write(search_file, r.text)
 
 
+def tpb_get_categories(hostname: str):
+    r = requests.get(f"{hostname}/browse")
+    category_text = r.text
+    categories_raw = re.findall(r'<dt>.*?</dd>', category_text, re.DOTALL)
+    categories = []
+    for category_raw in categories_raw:
+        main_category = re.search(
+            r'''
+            <dt>.*?"(?P<href>.*?/.*?/(?P<id>.*?))"
+            .*?"(?P<title>.*?)">.*?</dt>
+            ''',
+            category_raw,
+            flags=re.DOTALL | re.VERBOSE
+        )
+        category_raw = re.sub(
+            r'<dt>.*?</dt>',
+            '',
+            category_raw,
+            flags=re.DOTALL
+        )
+        sub_category = re.finditer(
+            r'''
+            href="(?P<href>.*?/.*?/(?P<id>.*?))"
+            .*?"(?P<title>.*?)"
+            ''',
+            category_raw,
+            flags=re.DOTALL | re.VERBOSE)
+        categories += [main_category.groupdict()]
+        for subcat in sub_category:
+            subcat_dict = subcat.groupdict()
+            subcat_dict["title"] = f'{main_category["title"]} - {subcat_dict["title"]}'
+            categories += [subcat_dict]
+    return categories
+
+
 def tpb_search_parse(tpb_search: str):
     search_list = TorrentItems()
     tpb_search = tpb_search.replace('&nbsp;', ' ')
