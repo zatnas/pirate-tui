@@ -4,6 +4,7 @@ piratesearch.txt
 mirror.txt
 proxy.txt
 search.txt
+category.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

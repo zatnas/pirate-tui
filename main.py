@@ -12,6 +12,7 @@ FILENAMES = {
     "mirror": "mirror.txt",
     "proxy": "proxy.txt",
     "search": "search.txt",
+    "category": "category.txt",
 }
 
 
@@ -157,11 +158,42 @@ def tpb_search(
     return file_write(search_file, r.text)
 
 
+def tpb_search_parse(tpb_search: str):
+    search_list = TorrentItems()
+    tpb_search = tpb_search.replace('&nbsp;', ' ')
+    for r in re.finditer(r"<tr>.*?vertTh.*?</tr>", tpb_search, re.DOTALL):
+        r_raw = r.group(0)
+        m = re.match(r"""
+            .*?<a.*?>(?P<torrent_subcategory>.*?)</a.*?
+            <a.*?>(?P<torrent_category>.*?)</a.*?
+            detName.*?href="(?P<torrent_link>.*?)".*?
+            >(?P<torrent_name>.*?)<.*?
+            href="(?P<torrent_magnet>magnet.*?)".*?
+            Uploaded\s*(?P<torrent_date>.*?),.*?
+            Size\s*(?P<torrent_size>.*?),.*?
+            ULed\s*by.*?
+            (<a.*?href="(?P<author_link>.*?)".*?|<i)>
+            (?P<author_name>.*?)<.*?
+            <td.*?>(?P<torrent_seeder>.*?)<.*?
+            <td.*?>(?P<torrent_leecher>.*?)<.*?
+        """, r_raw, re.DOTALL | re.VERBOSE)
+        search_list.add(TorrentItem(m.groupdict()))
+    return search_list
+
+
 def tpb_get_categories(hostname: str):
+    category_file = FILENAMES["category"]
     r = requests.get(f"{hostname}/browse")
-    category_text = r.text
-    categories_raw = re.findall(r'<dt>.*?</dd>', category_text, re.DOTALL)
-    categories = []
+    return file_write(category_file, r.text)
+
+
+def tpb_parse_categories(tpb_categories: str):
+    categories_raw = re.findall(r'<dt>.*?</dd>', tpb_categories, re.DOTALL)
+    categories = [{
+        "href": "",
+        "id": "0",
+        "title": "Any",
+    }]
     for category_raw in categories_raw:
         main_category = re.search(
             r'''
@@ -192,32 +224,10 @@ def tpb_get_categories(hostname: str):
     return categories
 
 
-def tpb_search_parse(tpb_search: str):
-    search_list = TorrentItems()
-    tpb_search = tpb_search.replace('&nbsp;', ' ')
-    for r in re.finditer(r"<tr>.*?vertTh.*?</tr>", tpb_search, re.DOTALL):
-        r_raw = r.group(0)
-        m = re.match(r"""
-            .*?<a.*?>(?P<torrent_subcategory>.*?)</a.*?
-            <a.*?>(?P<torrent_category>.*?)</a.*?
-            detName.*?href="(?P<torrent_link>.*?)".*?
-            >(?P<torrent_name>.*?)<.*?
-            href="(?P<torrent_magnet>magnet.*?)".*?
-            Uploaded\s*(?P<torrent_date>.*?),.*?
-            Size\s*(?P<torrent_size>.*?),.*?
-            ULed\s*by.*?
-            (<a.*?href="(?P<author_link>.*?)".*?|<i)>
-            (?P<author_name>.*?)<.*?
-            <td.*?>(?P<torrent_seeder>.*?)<.*?
-            <td.*?>(?P<torrent_leecher>.*?)<.*?
-        """, r_raw, re.DOTALL | re.VERBOSE)
-        search_list.add(TorrentItem(m.groupdict()))
-    return search_list
-
-
 def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
     search_file = FILENAMES["search"]
+    category_file = FILENAMES["category"]
 
     if file_exists(mirror_file):
         mirror = file_read(mirror_file)
@@ -229,6 +239,10 @@ def main(screen: 'curses._CursesWindow'):
         piratesearch = file_read(search_file)
     else:
         piratesearch = tpb_search(mirror, search_text)
+
+    category_text = "Any"
+    piratecategory = tpb_get_categories(mirror)
+    categories = tpb_parse_categories(piratecategory)
 
     search_list = tpb_search_parse(piratesearch)
 
@@ -293,6 +307,7 @@ def main(screen: 'curses._CursesWindow'):
         win1.addstr(2, 2, "Search: ")
         win1.addstr(6, 2, "Category: ")
         searchwin.addstr(0, 0, search_text)
+        categorywin.addstr(1, 1, category_text)
         draw_windows()
         c = screen.getch()
         clear_windows()
@@ -314,6 +329,40 @@ def main(screen: 'curses._CursesWindow'):
                     tpb_search(mirror, search_text)
                 )
                 max_index = len(search_list) - 1
+            elif c == ord('c'):
+                selected_category = 0
+                max_selected_category = len(categories) - 1 - 8
+                offset_category = 0
+                categorieswin = curses.newwin(10, cols - 14, 7, 12)
+                while True:
+                    categorieswin = curses.newwin(10, cols - 14, 7, 12)
+                    categorieswin.border("|", "|", "-", "-", "+", "+", "+" ,"+")
+                    for i in range(offset_category, offset_category + 8):
+                        selected = (i - offset_category) == selected_category
+                        attrib = curses.A_BOLD if selected else 0
+                        category = categories[i]
+                        categorieswin.addstr(i-offset_category+1, 1, category["title"], attrib)
+                    categorieswin.addstr(0, 1, str(offset_category))
+                    categorieswin.addstr(0, 5, str(max_selected_category))
+                    categorieswin.refresh()
+                    cc = screen.getch()
+                    categorieswin.clear()
+                    if cc == 27 or cc == ord('q'):
+                        break
+                    elif cc == curses.KEY_UP or c == ord('k'):
+                        if selected_category > 0:
+                            selected_category -= 1
+                        else:
+                            selected_category = 0
+                            if offset_category > 0:
+                                offset_category -= 1
+                    elif cc == curses.KEY_DOWN or c == ord('j'):
+                        if selected_category < 7:
+                            selected_category += 1
+                        else:
+                            selected_category = 7
+                            if offset_category <= max_selected_category:
+                                offset_category += 1
 
 
 curses.wrapper(main)
