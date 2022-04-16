@@ -152,7 +152,6 @@ def tpb_search(
 ):
     search_file = FILENAMES["search"]
     search = urllib.parse.quote(search)
-    # HOSTNAME/search/SEARCH/PAGE/SORT/CATEGORY
     url = f'{hostname}/search/{search}/{page}/{sort}/{category}'
     r = requests.get(url)
     return file_write(search_file, r.text)
@@ -257,8 +256,8 @@ def main(screen: 'curses._CursesWindow'):
 
     curses.noecho()
     curses.cbreak()
-    screen.keypad(True)
     curses.curs_set(0)
+    screen.keypad(True)
     screen.refresh()
 
     _, cols = screen.getmaxyx()
