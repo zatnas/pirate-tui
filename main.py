@@ -79,6 +79,23 @@ class TorrentItems(object):
         return self._items[self._index - 1]
 
 
+class Window():
+    def __init__(self, window: 'curses._CursesWindow', border: bool):
+        self.window = window
+        self.border = border
+
+    def refresh(self):
+        self.window.refresh()
+
+    def clear(self):
+        self.window.clear()
+
+    def draw_border(self, ignore_property: bool = False):
+        if not self.border and not ignore_property:
+            return
+        self.window.border("|", "|", "-", "-", "+", "+", "+", "+")
+
+
 def file_exists(path: str):
     return os.path.exists(path)
 
@@ -97,10 +114,46 @@ def file_read(path: str):
         return f.read()
 
 
-def tpb_search(hostname: str, search: str):
+def tpb_get_proxies() -> list[str]:
+    mirror_file = FILENAMES["mirror"]
+    r = requests.get("https://piratebayproxy.info/")
+    mirrors = file_write(mirror_file, r.text)
+    mirror_hostnames = re.findall(
+        r'<td class="site">.*href="([^"]+)"',
+        mirrors,
+    )
+    return mirror_hostnames
+
+
+def tpb_test_proxies(mirror_hostnames: list[str]):
+    mirror_file = FILENAMES["mirror"]
+    for site in mirror_hostnames:
+        try:
+            r = requests.get(site, timeout=5)
+            if r.status_code == 200:
+                return file_write(mirror_file, site)
+        except Exception:
+            raise Exception("No proxy found")
+
+
+def tpb_get_proxy():
+    mirror_hostnames = tpb_get_proxies()
+    mirror = tpb_test_proxies(mirror_hostnames)
+    return mirror
+
+
+def tpb_search(
+    hostname: str,
+    search: str,
+    page: int = 1,
+    sort: int = 99,
+    category: int = 0,
+):
     search_file = FILENAMES["search"]
-    search_urlencode = urllib.parse.quote(search)
-    r = requests.get(f'{hostname}/search/{search_urlencode}')
+    search = urllib.parse.quote(search)
+    # HOSTNAME/search/SEARCH/PAGE/SORT/CATEGORY
+    url = f'{hostname}/search/{search}/{page}/{sort}/{category}'
+    r = requests.get(url)
     return file_write(search_file, r.text)
 
 
@@ -129,33 +182,13 @@ def tpb_search_parse(tpb_search: str):
 
 def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
-    proxy_file = FILENAMES["proxy"]
     search_file = FILENAMES["search"]
 
     if file_exists(mirror_file):
         mirror = file_read(mirror_file)
     else:
-        if file_exists(proxy_file):
-            proxy_html = file_read(proxy_file)
-        else:
-            r = requests.get("https://piratebayproxy.info/")
-            proxy_html = file_write(proxy_file, r.text)
+        mirror = tpb_get_proxy()
 
-        proxysites = re.findall(
-            '<td class="site">.*href="([^"]+)"',
-            proxy_html,
-        )
-
-        for site in proxysites:
-            try:
-                r = requests.get(site, timeout=5)
-                if r.status_code == 200:
-                    mirror = file_write(mirror_file, site)
-                    break
-            except Exception:
-                pass
-
-    # piratebay/search/SEARCH/PAGE/SORT
     search_text = "spiderman"
     if file_exists(search_file):
         piratesearch = file_read(search_file)
@@ -182,57 +215,49 @@ def main(screen: 'curses._CursesWindow'):
     _, cols = screen.getmaxyx()
 
     win1 = curses.newwin(10, cols, 0, 0)
-    win1.clear()
-    win1.border("|", "|", "-", "-", "+", "+", "+", "+")
-    win1.refresh()
     win2 = curses.newwin(20, cols, 9, 0)
-    win2.clear()
-    win2.border("|", "|", "-", "-", "+", "+", "+", "+")
-    win2.refresh()
     searchcontainer = curses.newwin(3, cols - 12, 1, 10)
-    searchcontainer.clear()
-    searchcontainer.border("|", "|", "-", "-", "+", "+", "+", "+")
-    searchcontainer.refresh()
     searchwin = curses.newwin(1, cols - 14, 2, 11)
-    searchwin.clear()
-    searchwin.refresh()
     searchbox = curses.textpad.Textbox(searchwin)
+
+    windows = [
+        Window(win1, True),
+        Window(win2, True),
+        Window(searchcontainer, True),
+        Window(searchwin, False),
+    ]
+
+    def draw_windows():
+        [
+            (window.draw_border(), window.refresh())
+            for window in windows
+        ]
+
+    def clear_windows():
+        [window.clear() for window in windows]
 
     c = None
     current_index = 0
     max_index = len(search_list) - 1
     while True:
-        item = search_list[current_index]
-        win2.border("|", "|", "-", "-", "+", "+", "+", "+")
         for i, item in enumerate(search_list):
             selected_item = i == current_index
-            attribute = 0
-            if selected_item:
-                attribute = curses.A_BOLD
-            torrent_details = [
+            attribute = curses.A_BOLD if selected_item else 0
+            win2.addstr(i+1, 1, "")
+            [win2.addstr(d, attribute) for d in [
                 f'{item.torrent_subcategory:{max_tscat}} ',
                 f'{item.torrent_category:{max_tcat}} ',
                 f'{item.torrent_name:{max_tname}} ',
                 f'{item.torrent_size:{max_tsize}} ',
                 f'{item.torrent_seeder:{max_tseeder}} ',
                 f'{item.torrent_leecher:{max_tleecher}} ',
-            ]
-            win2.addstr(i+1, 1, "")
-            [win2.addstr(d, attribute) for d in torrent_details]
-        win2.refresh()
-        win1.border("|", "|", "-", "-", "+", "+", "+", "+")
+            ]]
         win1.addstr(1, 1, str(c))
         win1.addstr(2, 2, "Search: ")
-        win1.refresh()
-        searchcontainer.border("|", "|", "-", "-", "+", "+", "+", "+")
-        searchcontainer.refresh()
         searchwin.addstr(0, 0, search_text)
-        searchwin.refresh()
+        draw_windows()
         c = screen.getch()
-        searchcontainer.clear()
-        searchwin.clear()
-        win2.clear()
-        win1.clear()
+        clear_windows()
         if mode == "select":
             if c == 27 or c == ord('q'):
                 break
