@@ -240,6 +240,7 @@ def main(screen: 'curses._CursesWindow'):
         piratesearch = tpb_search(mirror, search_text)
 
     category_text = "Any"
+    category_id = 0
     piratecategory = tpb_get_categories(mirror)
     categories = tpb_parse_categories(piratecategory)
 
@@ -324,9 +325,11 @@ def main(screen: 'curses._CursesWindow'):
                 search_text = searchbox.edit()
                 curses.curs_set(0)
                 current_index = 0
-                search_list = tpb_search_parse(
-                    tpb_search(mirror, search_text)
-                )
+                search_list = tpb_search_parse(tpb_search(
+                    mirror,
+                    search_text,
+                    category=category_id
+                ))
                 max_index = len(search_list) - 1
             elif c == ord('c'):
                 selected_category = 0
@@ -341,27 +344,31 @@ def main(screen: 'curses._CursesWindow'):
                         attrib = curses.A_BOLD if selected else 0
                         category = categories[i]
                         categorieswin.addstr(i-offset_category+1, 1, category["title"], attrib)
-                    categorieswin.addstr(0, 1, str(offset_category))
-                    categorieswin.addstr(0, 5, str(max_selected_category))
                     categorieswin.refresh()
                     cc = screen.getch()
                     categorieswin.clear()
                     if cc == 27 or cc == ord('q'):
                         break
-                    elif cc == curses.KEY_UP or c == ord('k'):
+                    elif cc == curses.KEY_UP or cc == ord('k'):
                         if selected_category > 0:
                             selected_category -= 1
                         else:
                             selected_category = 0
                             if offset_category > 0:
                                 offset_category -= 1
-                    elif cc == curses.KEY_DOWN or c == ord('j'):
+                    elif cc == curses.KEY_DOWN or cc == ord('j'):
                         if selected_category < 7:
                             selected_category += 1
                         else:
                             selected_category = 7
                             if offset_category <= max_selected_category:
                                 offset_category += 1
+                    elif cc == curses.KEY_ENTER or cc == 10:
+                        category = categories[offset_category + selected_category]
+                        category_id = category["id"]
+                        category_text = category["title"]
+                        break
+
 
 
 curses.wrapper(main)
