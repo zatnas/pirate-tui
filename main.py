@@ -241,6 +241,7 @@ def main(screen: 'curses._CursesWindow'):
 
     category_text = "Any"
     category_id = 0
+    page = 1
     piratecategory = tpb_get_categories(mirror)
     categories = tpb_parse_categories(piratecategory)
 
@@ -318,6 +319,24 @@ def main(screen: 'curses._CursesWindow'):
                 current_index -= 1 if current_index > 0 else 0
             elif c == curses.KEY_DOWN or c == ord('j'):
                 current_index += 1 if current_index < max_index else 0
+            elif c == ord('n'):
+                page += 1
+                search_list = tpb_search_parse(tpb_search(
+                    mirror,
+                    search_text,
+                    page=page,
+                    category=category_id
+                ))
+            elif c == ord('p'):
+                if page <= 1:
+                    continue
+                page -= 1
+                search_list = tpb_search_parse(tpb_search(
+                    mirror,
+                    search_text,
+                    page=page,
+                    category=category_id
+                ))
             elif c == ord('s'):
                 searchwin.clear()
                 searchwin.refresh()
@@ -325,9 +344,11 @@ def main(screen: 'curses._CursesWindow'):
                 search_text = searchbox.edit()
                 curses.curs_set(0)
                 current_index = 0
+                page = 0
                 search_list = tpb_search_parse(tpb_search(
                     mirror,
                     search_text,
+                    page=page,
                     category=category_id
                 ))
                 max_index = len(search_list) - 1
