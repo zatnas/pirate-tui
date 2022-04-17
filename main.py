@@ -1,4 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/python
+import json
 import re
 import curses
 import curses.textpad
@@ -13,6 +14,8 @@ FILENAMES = {
     "proxy": "proxy.txt",
     "search": "search.txt",
     "category": "category.txt",
+    "lastsearch": "lastsearch.txt",
+    "lastcategory": "lastcategory.txt",
 }
 
 
@@ -151,9 +154,11 @@ def tpb_search(
     category: int = 0,
 ):
     search_file = FILENAMES["search"]
+    lastsearch_file = FILENAMES["lastsearch"]
     search = urllib.parse.quote(search)
     url = f'{hostname}/search/{search}/{page}/{sort}/{category}'
     r = requests.get(url)
+    file_write(lastsearch_file, search)
     return file_write(search_file, r.text)
 
 
@@ -227,22 +232,34 @@ def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
     search_file = FILENAMES["search"]
     category_file = FILENAMES["category"]
+    lastsearch_file = FILENAMES["lastsearch"]
+    lastcategory_file = FILENAMES["lastcategory"]
 
     if file_exists(mirror_file):
         mirror = file_read(mirror_file)
     else:
         mirror = tpb_get_proxy()
 
-    search_text = "spiderman"
+    if file_exists(lastsearch_file):
+        search_text = file_read(lastsearch_file)
+    else:
+        search_text = "spiderman"
     if file_exists(search_file):
         piratesearch = file_read(search_file)
     else:
         piratesearch = tpb_search(mirror, search_text)
 
-    category_text = "Any"
-    category_id = 0
+    if file_exists(lastcategory_file):
+        _ = json.loads(file_read(lastcategory_file))
+        category_text, category_id = _["title"], _["id"]
+    else:
+        category_text = "Any"
+        category_id = 0
     page = 1
-    piratecategory = tpb_get_categories(mirror)
+    if file_exists(category_file):
+        piratecategory = file_read(category_file)
+    else:
+        piratecategory = tpb_get_categories(mirror)
     categories = tpb_parse_categories(piratecategory)
 
     search_list = tpb_search_parse(piratesearch)
@@ -358,7 +375,8 @@ def main(screen: 'curses._CursesWindow'):
                 offset_category = 0
                 categorieswin = curses.newwin(10, cols - 14, 7, 12)
                 while True:
-                    categorieswin = curses.newwin(10, cols - 14, 7, 12)
+                    lastcategory_file = FILENAMES["lastcategory"]
+                    categorieswin = curses.newwin(10, cols - 14, 5, 12)
                     categorieswin.border("|", "|", "-", "-", "+", "+", "+" ,"+")
                     for i in range(offset_category, offset_category + 8):
                         selected = (i - offset_category) == selected_category
@@ -388,6 +406,10 @@ def main(screen: 'curses._CursesWindow'):
                         category = categories[offset_category + selected_category]
                         category_id = category["id"]
                         category_text = category["title"]
+                        file_write(lastcategory_file, json.dumps({
+                            "id": category_id,
+                            "title": category_text,
+                        }))
                         break
 
 
