@@ -146,7 +146,7 @@ def tpb_get_proxy():
     return mirror
 
 
-def tpb_search(
+def tpb_get_search(
     hostname: str,
     search: str,
     page: int = 1,
@@ -162,7 +162,7 @@ def tpb_search(
     return file_write(search_file, r.text)
 
 
-def tpb_search_parse(tpb_search: str):
+def tpb_parse_search(tpb_search: str):
     search_list = TorrentItems()
     tpb_search = tpb_search.replace('&nbsp;', ' ')
     for r in re.finditer(r"<tr>.*?vertTh.*?</tr>", tpb_search, re.DOTALL):
@@ -247,7 +247,7 @@ def main(screen: 'curses._CursesWindow'):
     if file_exists(search_file):
         piratesearch = file_read(search_file)
     else:
-        piratesearch = tpb_search(mirror, search_text)
+        piratesearch = tpb_get_search(mirror, search_text)
 
     if file_exists(lastcategory_file):
         _ = json.loads(file_read(lastcategory_file))
@@ -262,7 +262,7 @@ def main(screen: 'curses._CursesWindow'):
         piratecategory = tpb_get_categories(mirror)
     categories = tpb_parse_categories(piratecategory)
 
-    search_list = tpb_search_parse(piratesearch)
+    search_list = tpb_parse_search(piratesearch)
 
     max_tcat = f'{search_list.max_tct}s'
     max_tscat = f'{search_list.max_tsc}s'
@@ -338,7 +338,7 @@ def main(screen: 'curses._CursesWindow'):
                 current_index += 1 if current_index < max_index else 0
             elif c == ord('n'):
                 page += 1
-                search_list = tpb_search_parse(tpb_search(
+                search_list = tpb_parse_search(tpb_get_search(
                     mirror,
                     search_text,
                     page=page,
@@ -348,7 +348,7 @@ def main(screen: 'curses._CursesWindow'):
                 if page <= 1:
                     continue
                 page -= 1
-                search_list = tpb_search_parse(tpb_search(
+                search_list = tpb_parse_search(tpb_get_search(
                     mirror,
                     search_text,
                     page=page,
@@ -362,11 +362,11 @@ def main(screen: 'curses._CursesWindow'):
                 curses.curs_set(0)
                 current_index = 0
                 page = 0
-                search_list = tpb_search_parse(tpb_search(
+                search_list = tpb_parse_search(tpb_get_search(
                     mirror,
                     search_text,
                     page=page,
-                    category=category_id
+                    category=category_id,
                 ))
                 max_index = len(search_list) - 1
             elif c == ord('c'):
@@ -411,7 +411,6 @@ def main(screen: 'curses._CursesWindow'):
                             "title": category_text,
                         }))
                         break
-
 
 
 curses.wrapper(main)
