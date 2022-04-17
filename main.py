@@ -97,7 +97,16 @@ class Window():
     def draw_border(self, ignore_property: bool = False):
         if not self.border and not ignore_property:
             return
-        self.window.border("|", "|", "-", "-", "+", "+", "+", "+")
+        rows, cols = self.window.getmaxyx()
+        for i in range(1, rows - 1):
+            self.window.addstr(i, 0, "│")
+            self.window.addstr(i, cols - 1, "│")
+        self.window.addstr(0       , 1       , "─" * (cols - 2))
+        self.window.addstr(rows - 1, 1       , "─" * (cols - 2))
+        self.window.addstr(0       , 0       , "┌")
+        self.window.addstr(0       , cols - 1, "┐")
+        self.window.addstr(rows - 1, 0       , "└")
+        self.window.insstr(rows - 1, cols - 1, "┘")
 
 
 def file_exists(path: str):
@@ -282,7 +291,7 @@ def main(screen: 'curses._CursesWindow'):
     _, cols = screen.getmaxyx()
 
     win1 = curses.newwin(9, cols, 0, 0)
-    win2 = curses.newwin(20, cols, 8, 0)
+    win2 = curses.newwin(17, cols, 9, 0)
     searchcontainer = curses.newwin(3, cols - 14, 1, 12)
     searchwin = curses.newwin(1, cols - 16, 2, 13)
     searchbox = curses.textpad.Textbox(searchwin)
@@ -313,14 +322,12 @@ def main(screen: 'curses._CursesWindow'):
             selected_item = i == current_index
             attribute = curses.A_BOLD if selected_item else 0
             win2.addstr(i+1, 1, "")
-            [win2.addstr(d, attribute) for d in [
-                f'{item.torrent_subcategory:{max_tscat}} ',
-                f'{item.torrent_category:{max_tcat}} ',
-                f'{item.torrent_name:{max_tname}} ',
-                f'{item.torrent_size:{max_tsize}} ',
-                f'{item.torrent_seeder:{max_tseeder}} ',
-                f'{item.torrent_leecher:{max_tleecher}} ',
-            ]]
+            win2.addstr(f'{item.torrent_subcategory:{max_tscat}} │ ', attribute)
+            win2.addstr(f'{item.torrent_category:{max_tcat}} │ ', attribute)
+            win2.addstr(f'{item.torrent_name:{max_tname}} ', attribute)
+            win2.addstr(i+1, cols - 10 - search_list.max_tsz - search_list.max_tsd - search_list.max_tlc, f' │ {item.torrent_size:{max_tsize}} ', attribute)
+            win2.addstr(i+1, cols - 6 - search_list.max_tsd - search_list.max_tlc, f'│ {item.torrent_seeder:{max_tseeder}} ', attribute)
+            win2.addstr(i+1, cols - 4 - search_list.max_tlc, f'│ {item.torrent_leecher:{max_tleecher}} ', attribute)
         win1.addstr(1, 1, str(c))
         win1.addstr(2, 2, "Search: ")
         win1.addstr(6, 2, "Category: ")
@@ -368,6 +375,12 @@ def main(screen: 'curses._CursesWindow'):
                     page=page,
                     category=category_id,
                 ))
+                max_tcat = f'{search_list.max_tct}s'
+                max_tscat = f'{search_list.max_tsc}s'
+                max_tname = f'{search_list.max_tnm}s'
+                max_tsize = f'{search_list.max_tsz}s'
+                max_tseeder = f'{search_list.max_tsd}s'
+                max_tleecher = f'{search_list.max_tlc}s'
                 max_index = len(search_list) - 1
             elif c == ord('c'):
                 selected_category = 0
@@ -377,7 +390,8 @@ def main(screen: 'curses._CursesWindow'):
                 while True:
                     lastcategory_file = FILENAMES["lastcategory"]
                     categorieswin = curses.newwin(10, cols - 14, 5, 12)
-                    categorieswin.border("|", "|", "-", "-", "+", "+", "+" ,"+")
+                    _ = Window(categorieswin, True)
+                    _.draw_border()
                     for i in range(offset_category, offset_category + 8):
                         selected = (i - offset_category) == selected_category
                         attrib = curses.A_BOLD if selected else 0
