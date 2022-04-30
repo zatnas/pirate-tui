@@ -14,6 +14,7 @@ FILENAMES = {
     "proxy": "proxy.txt",
     "search": "search.txt",
     "category": "category.txt",
+    "lastmirror": "lastmirror.txt",
     "lastsearch": "lastsearch.txt",
     "lastcategory": "lastcategory.txt",
 }
@@ -139,14 +140,15 @@ def tpb_get_proxies() -> list[str]:
 
 
 def tpb_test_proxies(mirror_hostnames: list[str]):
-    mirror_file = FILENAMES["mirror"]
+    lastmirror_file = FILENAMES["lastmirror"]
     for site in mirror_hostnames:
         try:
             r = requests.get(site, timeout=5)
             if r.status_code == 200:
-                return file_write(mirror_file, site)
+                return file_write(lastmirror_file, site)
         except Exception:
-            raise Exception("No proxy found")
+            continue
+    raise Exception("No proxy found")
 
 
 def tpb_get_proxy():
@@ -241,11 +243,12 @@ def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
     search_file = FILENAMES["search"]
     category_file = FILENAMES["category"]
+    lastmirror_file = FILENAMES["lastmirror"]
     lastsearch_file = FILENAMES["lastsearch"]
     lastcategory_file = FILENAMES["lastcategory"]
 
-    if file_exists(mirror_file):
-        mirror = file_read(mirror_file)
+    if file_exists(lastmirror_file):
+        mirror = file_read(lastmirror_file)
     else:
         mirror = tpb_get_proxy()
 
