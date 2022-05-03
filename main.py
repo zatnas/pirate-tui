@@ -161,6 +161,71 @@ def tpb_parse_categories(tpb_categories: str):
     return categories
 
 
+def select_category(
+    screen: 'curses._CursesWindow',
+    category_list: CategoryList,
+):
+    _, cols = screen.getmaxyx()
+
+    win_sy = 7
+    win_sx = 12
+    win = curses.newwin(10, cols - 14, win_sy, win_sx)
+
+    index_category = 0
+    offset_category = 0
+    max_index_category = len(category_list) - win_sy - 2
+    while True:
+        lastcategory_file = FILENAMES["lastcategory"]
+        win = curses.newwin(10, cols - 14, 5, 12)
+        _ = Window(win, True)
+        _.draw_border()
+        for i in range(offset_category, offset_category + 8):
+            screen_index = i - offset_category
+            selected = screen_index == index_category
+            attrib = curses.A_BOLD if selected else 0
+            category = category_list[i]
+            win.addstr(screen_index+1, 1, category.name, attrib)
+        win.refresh()
+        c = screen.getch()
+        win.clear()
+        if c == 27 or c == ord('q'):
+            return None
+        elif c == curses.KEY_UP or c == ord('k'):
+            if index_category > 0:
+                index_category -= 1
+            elif offset_category > 0:
+                offset_category -= 1
+            else:
+                index_category = win_sy
+                offset_category = max_index_category + 1
+        elif c == curses.KEY_DOWN or c == ord('j'):
+            if index_category < win_sy:
+                index_category += 1
+            elif offset_category <= max_index_category:
+                offset_category += 1
+            else:
+                index_category = 0
+                offset_category = 0
+        elif c == curses.KEY_LEFT or c == ord('h'):
+            if offset_category - (win_sy+1) >= 0:
+                offset_category -= win_sy+1
+            else:
+                offset_category = 0
+        elif c == curses.KEY_RIGHT or c == ord('l'):
+            if offset_category + (win_sy+1) <= max_index_category:
+                offset_category += win_sy+1
+            else:
+                offset_category = max_index_category + 1
+        elif c == curses.KEY_ENTER or c == 10:
+            index = offset_category + index_category
+            category = category_list[index]
+            file_write(lastcategory_file, json.dumps({
+                "id": category.id,
+                "name": category.name,
+            }))
+            return category
+
+
 def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
     search_file = FILENAMES["search"]
@@ -319,46 +384,9 @@ def main(screen: 'curses._CursesWindow'):
             ))
             max_index = len(search_list) - 1
         elif c == ord('c'):
-            selected_category = 0
-            max_selected_category = len(categories) - 1 - 8
-            offset_category = 0
-            categorieswin = curses.newwin(10, cols - 14, 7, 12)
-            while True:
-                lastcategory_file = FILENAMES["lastcategory"]
-                categorieswin = curses.newwin(10, cols - 14, 5, 12)
-                _ = Window(categorieswin, True)
-                _.draw_border()
-                for i in range(offset_category, offset_category + 8):
-                    selected = (i - offset_category) == selected_category
-                    attrib = curses.A_BOLD if selected else 0
-                    category = categories[i]
-                    categorieswin.addstr(i-offset_category+1, 1, category.name, attrib)
-                categorieswin.refresh()
-                cc = screen.getch()
-                categorieswin.clear()
-                if cc == 27 or cc == ord('q'):
-                    break
-                elif cc == curses.KEY_UP or cc == ord('k'):
-                    if selected_category > 0:
-                        selected_category -= 1
-                    else:
-                        selected_category = 0
-                        if offset_category > 0:
-                            offset_category -= 1
-                elif cc == curses.KEY_DOWN or cc == ord('j'):
-                    if selected_category < 7:
-                        selected_category += 1
-                    else:
-                        selected_category = 7
-                        if offset_category <= max_selected_category:
-                            offset_category += 1
-                elif cc == curses.KEY_ENTER or cc == 10:
-                    category = categories[offset_category + selected_category]
-                    file_write(lastcategory_file, json.dumps({
-                        "id": category.id,
-                        "name": category.name,
-                    }))
-                    break
+            selected_category = select_category(screen, categories)
+            if selected_category:
+                category = selected_category
 
 
 curses.wrapper(main)
