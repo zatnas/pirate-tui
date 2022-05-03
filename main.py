@@ -7,7 +7,6 @@ import requests
 import os.path
 import urllib.parse
 
-from pprint import pprint
 from piratetui.TorrentItem import TorrentItem
 from piratetui.TorrentItems import TorrentItems
 from piratetui.Window import Window
