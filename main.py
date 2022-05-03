@@ -8,6 +8,7 @@ import os.path
 import urllib.parse
 
 from pprint import pprint
+from piratetui.TorrentItem import TorrentItem
 
 FILENAMES = {
     "mirror": "mirror.txt",
@@ -20,22 +21,6 @@ FILENAMES = {
 }
 
 
-class TorrentItem(object):
-    def __init__(self, groupdict):
-        self.torrent_category: str = groupdict["torrent_category"]
-        self.torrent_subcategory: str = groupdict["torrent_subcategory"]
-        self.torrent_link: str = groupdict["torrent_link"]
-        self.torrent_name: str = groupdict["torrent_name"]
-        self.torrent_magnet: str = groupdict["torrent_magnet"]
-        self.torrent_date: str = groupdict["torrent_date"]
-        self.torrent_size: str = groupdict["torrent_size"]
-        self.torrent_seeder: str = groupdict["torrent_seeder"]
-        self.torrent_leecher: str = groupdict["torrent_leecher"]
-        _ = groupdict["author_link"]
-        self.author_link: str = _
-        if not _:
-            self.author_link: str = ""
-        self.author_name: str = groupdict["author_name"]
 
 
 class TorrentItems(object):
