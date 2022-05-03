@@ -7,6 +7,8 @@ import requests
 import os.path
 import urllib.parse
 
+from piratetui.CategoryList import CategoryList
+from piratetui.Category import Category
 from piratetui.TorrentItem import TorrentItem
 from piratetui.TorrentItems import TorrentItems
 from piratetui.Window import Window
@@ -115,17 +117,19 @@ def tpb_get_categories(hostname: str):
 
 
 def tpb_parse_categories(tpb_categories: str):
+    categories = CategoryList()
     categories_raw = re.findall(r'<dt>.*?</dd>', tpb_categories, re.DOTALL)
-    categories = [{
-        "href": "",
-        "id": "0",
-        "title": "Any",
-    }]
+    categories.add_category(Category(
+        name="Any",
+        id="0",
+        link="",
+        category_type="MainCategory",
+    ))
     for category_raw in categories_raw:
         main_category = re.search(
             r'''
-            <dt>.*?"(?P<href>.*?/.*?/(?P<id>.*?))"
-            .*?"(?P<title>.*?)">.*?</dt>
+            <dt>.*?"(?P<link>.*?/.*?/(?P<id>.*?))"
+            .*?"(?P<name>.*?)">.*?</dt>
             ''',
             category_raw,
             flags=re.DOTALL | re.VERBOSE
@@ -136,18 +140,24 @@ def tpb_parse_categories(tpb_categories: str):
             category_raw,
             flags=re.DOTALL
         )
-        sub_category = re.finditer(
+        sub_categories = re.finditer(
             r'''
-            href="(?P<href>.*?/.*?/(?P<id>.*?))"
-            .*?"(?P<title>.*?)"
+            href="(?P<link>.*?/.*?/(?P<id>.*?))"
+            .*?"(?P<name>.*?)"
             ''',
             category_raw,
             flags=re.DOTALL | re.VERBOSE)
-        categories += [main_category.groupdict()]
-        for subcat in sub_category:
-            subcat_dict = subcat.groupdict()
-            subcat_dict["title"] = f'{main_category["title"]} - {subcat_dict["title"]}'
-            categories += [subcat_dict]
+        categories.add_category(Category(
+            **main_category.groupdict(),
+            category_type="MainCategory",
+        ))
+        for sub_category in sub_categories:
+            subcat_dict = sub_category.groupdict()
+            subcat_dict["name"] = f'{main_category["name"]} - {subcat_dict["name"]}'
+            categories.add_category(Category(
+                **subcat_dict,
+                category_type="SubCategory",
+            ))
     return categories
 
 
@@ -173,12 +183,14 @@ def main(screen: 'curses._CursesWindow'):
     else:
         piratesearch = tpb_get_search(mirror, search_text)
 
+    category = Category()
     if file_exists(lastcategory_file):
         _ = json.loads(file_read(lastcategory_file))
-        category_text, category_id = _["title"], _["id"]
+        category.name = _["name"]
+        category.id = _["id"]
     else:
-        category_text = "Any"
-        category_id = 0
+        category.name = "Any"
+        category.id = "0"
     page = 1
     if file_exists(category_file):
         piratecategory = file_read(category_file)
@@ -247,7 +259,7 @@ def main(screen: 'curses._CursesWindow'):
         win1.addstr(2, 2, "Search: ")
         win1.addstr(6, 2, "Category: ")
         searchwin.addstr(0, 0, search_text)
-        categorywin.addstr(1, 1, category_text)
+        categorywin.addstr(1, 1, category.name)
         draw_windows()
         c = screen.getch()
         clear_windows()
@@ -264,7 +276,7 @@ def main(screen: 'curses._CursesWindow'):
                     mirror,
                     search_text,
                     page=page,
-                    category=category_id
+                    category=category.id
                 ))
             elif c == ord('p'):
                 if page <= 1:
@@ -274,7 +286,7 @@ def main(screen: 'curses._CursesWindow'):
                     mirror,
                     search_text,
                     page=page,
-                    category=category_id
+                    category=category.id
                 ))
             elif c == ord('s'):
                 searchwin.clear()
@@ -288,7 +300,7 @@ def main(screen: 'curses._CursesWindow'):
                     mirror,
                     search_text,
                     page=page,
-                    category=category_id,
+                    category=category.id,
                 ))
                 max_tcat = f'{search_list.max_tct}s'
                 max_tscat = f'{search_list.max_tsc}s'
@@ -311,7 +323,7 @@ def main(screen: 'curses._CursesWindow'):
                         selected = (i - offset_category) == selected_category
                         attrib = curses.A_BOLD if selected else 0
                         category = categories[i]
-                        categorieswin.addstr(i-offset_category+1, 1, category["title"], attrib)
+                        categorieswin.addstr(i-offset_category+1, 1, category.name, attrib)
                     categorieswin.refresh()
                     cc = screen.getch()
                     categorieswin.clear()
@@ -333,11 +345,9 @@ def main(screen: 'curses._CursesWindow'):
                                 offset_category += 1
                     elif cc == curses.KEY_ENTER or cc == 10:
                         category = categories[offset_category + selected_category]
-                        category_id = category["id"]
-                        category_text = category["title"]
                         file_write(lastcategory_file, json.dumps({
-                            "id": category_id,
-                            "title": category_text,
+                            "id": category.id,
+                            "name": category.name,
                         }))
                         break
 
