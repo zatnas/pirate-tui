@@ -281,14 +281,14 @@ def main(screen: 'curses._CursesWindow'):
     screen.keypad(True)
     screen.refresh()
 
-    _, cols = screen.getmaxyx()
+    screen_y, screen_x = screen.getmaxyx()
 
-    win1 = curses.newwin(9, cols, 0, 0)
-    win2 = curses.newwin(17, cols, 9, 0)
-    searchcontainer = curses.newwin(3, cols - 14, 1, 12)
-    searchwin = curses.newwin(1, cols - 16, 2, 13)
+    win1 = curses.newwin(9, screen_x, 0, 0)
+    win2 = curses.newwin(screen_y - 9, screen_x, 9, 0)
+    searchcontainer = curses.newwin(3, screen_x - 14, 1, 12)
+    searchwin = curses.newwin(1, screen_x - 16, 2, 13)
     searchbox = curses.textpad.Textbox(searchwin)
-    categorywin = curses.newwin(3, cols - 14, 5, 12)
+    categorywin = curses.newwin(3, screen_x - 14, 5, 12)
 
     windows = [
         Window(win1, True),
@@ -314,13 +314,13 @@ def main(screen: 'curses._CursesWindow'):
         for i, item in enumerate(search_list):
             selected_item = i == current_index
             attribute = curses.A_BOLD if selected_item else 0
-            win2.addstr(i+1, 1, "")
-            win2.addstr(f'{item.torrent_subcategory:{max_tscat}} │ ', attribute)
-            win2.addstr(f'{item.torrent_category:{max_tcat}} │ ', attribute)
-            win2.addstr(f'{item.torrent_name:{max_tname}} ', attribute)
-            win2.addstr(i+1, cols - 10 - search_list.max_tsz - search_list.max_tsd - search_list.max_tlc, f' │ {item.torrent_size:{max_tsize}} ', attribute)
-            win2.addstr(i+1, cols - 6 - search_list.max_tsd - search_list.max_tlc, f'│ {item.torrent_seeder:{max_tseeder}} ', attribute)
-            win2.addstr(i+1, cols - 4 - search_list.max_tlc, f'│ {item.torrent_leecher:{max_tleecher}} ', attribute)
+            win2.addstr(i+1, 2, "")
+            win2.addstr(f'{item.subcategory:{max_tscat}} │ ', attribute)
+            win2.addstr(f'{item.category:{max_tcat}} │ ', attribute)
+            win2.addstr(f'{item.name:{max_tname}} ', attribute)
+            win2.addstr(i+1, screen_x - 11 - search_list.max_tsz - search_list.max_tsd - search_list.max_tlc, f' │ {item.size:{max_tsize}} ', attribute)
+            win2.addstr(i+1, screen_x - 7 - search_list.max_tsd - search_list.max_tlc, f'│ {item.seeder:{max_tseeder}} ', attribute)
+            win2.addstr(i+1, screen_x - 4 - search_list.max_tlc, f'│ {item.leecher:{max_tleecher}} ', attribute)
         win1.addstr(1, 1, str(c))
         win1.addstr(2, 2, "Search: ")
         win1.addstr(6, 2, "Category: ")
