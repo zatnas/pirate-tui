@@ -207,7 +207,6 @@ def main(screen: 'curses._CursesWindow'):
     max_tseeder = f'{search_list.max_tsd}s'
     max_tleecher = f'{search_list.max_tlc}s'
 
-    mode = "select"
 
     curses.noecho()
     curses.cbreak()
@@ -263,93 +262,103 @@ def main(screen: 'curses._CursesWindow'):
         draw_windows()
         c = screen.getch()
         clear_windows()
-        if mode == "select":
-            if c == 27 or c == ord('q'):
-                break
-            elif c == curses.KEY_UP or c == ord('k'):
-                current_index -= 1 if current_index > 0 else 0
-            elif c == curses.KEY_DOWN or c == ord('j'):
-                current_index += 1 if current_index < max_index else 0
-            elif c == ord('n'):
-                page += 1
-                search_list = tpb_parse_search(tpb_get_search(
-                    mirror,
-                    search_text,
-                    page=page,
-                    category=category.id
-                ))
-            elif c == ord('p'):
-                if page <= 1:
-                    continue
-                page -= 1
-                search_list = tpb_parse_search(tpb_get_search(
-                    mirror,
-                    search_text,
-                    page=page,
-                    category=category.id
-                ))
-            elif c == ord('s'):
-                searchwin.clear()
-                searchwin.refresh()
-                curses.curs_set(1)
-                search_text = searchbox.edit()
-                curses.curs_set(0)
-                current_index = 0
-                page = 0
-                search_list = tpb_parse_search(tpb_get_search(
-                    mirror,
-                    search_text,
-                    page=page,
-                    category=category.id,
-                ))
-                max_tcat = f'{search_list.max_tct}s'
-                max_tscat = f'{search_list.max_tsc}s'
-                max_tname = f'{search_list.max_tnm}s'
-                max_tsize = f'{search_list.max_tsz}s'
-                max_tseeder = f'{search_list.max_tsd}s'
-                max_tleecher = f'{search_list.max_tlc}s'
-                max_index = len(search_list) - 1
-            elif c == ord('c'):
-                selected_category = 0
-                max_selected_category = len(categories) - 1 - 8
-                offset_category = 0
-                categorieswin = curses.newwin(10, cols - 14, 7, 12)
-                while True:
-                    lastcategory_file = FILENAMES["lastcategory"]
-                    categorieswin = curses.newwin(10, cols - 14, 5, 12)
-                    _ = Window(categorieswin, True)
-                    _.draw_border()
-                    for i in range(offset_category, offset_category + 8):
-                        selected = (i - offset_category) == selected_category
-                        attrib = curses.A_BOLD if selected else 0
-                        category = categories[i]
-                        categorieswin.addstr(i-offset_category+1, 1, category.name, attrib)
-                    categorieswin.refresh()
-                    cc = screen.getch()
-                    categorieswin.clear()
-                    if cc == 27 or cc == ord('q'):
-                        break
-                    elif cc == curses.KEY_UP or cc == ord('k'):
-                        if selected_category > 0:
-                            selected_category -= 1
-                        else:
-                            selected_category = 0
-                            if offset_category > 0:
-                                offset_category -= 1
-                    elif cc == curses.KEY_DOWN or cc == ord('j'):
-                        if selected_category < 7:
-                            selected_category += 1
-                        else:
-                            selected_category = 7
-                            if offset_category <= max_selected_category:
-                                offset_category += 1
-                    elif cc == curses.KEY_ENTER or cc == 10:
-                        category = categories[offset_category + selected_category]
-                        file_write(lastcategory_file, json.dumps({
-                            "id": category.id,
-                            "name": category.name,
-                        }))
-                        break
+        if c == 27 or c == ord('q'):
+            break
+        elif c == curses.KEY_UP or c == ord('k'):
+            current_index -= 1 if current_index > 0 else 0
+        elif c == curses.KEY_DOWN or c == ord('j'):
+            current_index += 1 if current_index < max_index else 0
+        elif c == ord('n'):
+            page += 1
+            search_list = tpb_parse_search(tpb_get_search(
+                mirror,
+                search_text,
+                page=page,
+                category=category.id
+            ))
+            max_index = len(search_list) - 1
+        elif c == ord('p'):
+            if page <= 1:
+                continue
+            page -= 1
+            search_list = tpb_parse_search(tpb_get_search(
+                mirror,
+                search_text,
+                page=page,
+                category=category.id
+            ))
+            max_index = len(search_list) - 1
+        elif c == ord('s'):
+            searchwin.clear()
+            searchwin.refresh()
+            curses.curs_set(1)
+            search_text = searchbox.edit()
+            curses.curs_set(0)
+            current_index = 0
+            page = 0
+            search_list = tpb_parse_search(tpb_get_search(
+                mirror,
+                search_text,
+                page=page,
+                category=category.id,
+            ))
+            max_tcat = f'{search_list.max_tct}s'
+            max_tscat = f'{search_list.max_tsc}s'
+            max_tname = f'{search_list.max_tnm}s'
+            max_tsize = f'{search_list.max_tsz}s'
+            max_tseeder = f'{search_list.max_tsd}s'
+            max_tleecher = f'{search_list.max_tlc}s'
+            max_index = len(search_list) - 1
+        elif c == ord('r'):
+            page = 1
+            search_list = tpb_parse_search(tpb_get_search(
+                mirror,
+                search_text,
+                page=page,
+                category=category.id
+            ))
+            max_index = len(search_list) - 1
+        elif c == ord('c'):
+            selected_category = 0
+            max_selected_category = len(categories) - 1 - 8
+            offset_category = 0
+            categorieswin = curses.newwin(10, cols - 14, 7, 12)
+            while True:
+                lastcategory_file = FILENAMES["lastcategory"]
+                categorieswin = curses.newwin(10, cols - 14, 5, 12)
+                _ = Window(categorieswin, True)
+                _.draw_border()
+                for i in range(offset_category, offset_category + 8):
+                    selected = (i - offset_category) == selected_category
+                    attrib = curses.A_BOLD if selected else 0
+                    category = categories[i]
+                    categorieswin.addstr(i-offset_category+1, 1, category.name, attrib)
+                categorieswin.refresh()
+                cc = screen.getch()
+                categorieswin.clear()
+                if cc == 27 or cc == ord('q'):
+                    break
+                elif cc == curses.KEY_UP or cc == ord('k'):
+                    if selected_category > 0:
+                        selected_category -= 1
+                    else:
+                        selected_category = 0
+                        if offset_category > 0:
+                            offset_category -= 1
+                elif cc == curses.KEY_DOWN or cc == ord('j'):
+                    if selected_category < 7:
+                        selected_category += 1
+                    else:
+                        selected_category = 7
+                        if offset_category <= max_selected_category:
+                            offset_category += 1
+                elif cc == curses.KEY_ENTER or cc == 10:
+                    category = categories[offset_category + selected_category]
+                    file_write(lastcategory_file, json.dumps({
+                        "id": category.id,
+                        "name": category.name,
+                    }))
+                    break
 
 
 curses.wrapper(main)
