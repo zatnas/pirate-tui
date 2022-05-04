@@ -2,13 +2,13 @@
 import json
 import re
 import curses
-import curses.textpad
 import requests
 import os.path
 import urllib.parse
 
 from piratetui.CategoryList import CategoryList
 from piratetui.Category import Category
+from piratetui.Textbox import Textbox
 from piratetui.TorrentItem import TorrentItem
 from piratetui.TorrentItems import TorrentItems
 from piratetui.Window import Window
@@ -151,6 +151,7 @@ def tpb_parse_categories(tpb_categories: str):
             **main_category.groupdict(),
             category_type="MainCategory",
         ))
+
         for sub_category in sub_categories:
             subcat_dict = sub_category.groupdict()
             subcat_dict["name"] = f'{main_category["name"]} - {subcat_dict["name"]}'
@@ -287,7 +288,7 @@ def main(screen: 'curses._CursesWindow'):
     win2 = curses.newwin(screen_y - 9, screen_x, 9, 0)
     searchcontainer = curses.newwin(3, screen_x - 14, 1, 12)
     searchwin = curses.newwin(1, screen_x - 16, 2, 13)
-    searchbox = curses.textpad.Textbox(searchwin)
+    searchbox = Textbox(searchwin)
     categorywin = curses.newwin(3, screen_x - 14, 5, 12)
 
     windows = [
