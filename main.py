@@ -266,6 +266,14 @@ def main(screen: 'curses._CursesWindow'):
 
     search_list = tpb_parse_search(piratesearch)
 
+    def new_search():
+        return tpb_parse_search(tpb_get_search(
+            mirror,
+            search_text,
+            page=page,
+            category=category.id
+        ))
+
     def reset_maxlen():
         global max_tcat, max_tscat, max_tname, max_tsize, max_tseeder, max_tleecher
         max_tcat = f'{search_list.max_tct}s'
@@ -338,24 +346,14 @@ def main(screen: 'curses._CursesWindow'):
             current_index += 1 if current_index < max_index else 0
         elif c == ord('n'):
             page += 1
-            search_list = tpb_parse_search(tpb_get_search(
-                mirror,
-                search_text,
-                page=page,
-                category=category.id
-            ))
+            search_list = new_search()
             reset_maxlen()
             max_index = len(search_list) - 1
         elif c == ord('p'):
             if page <= 1:
                 continue
             page -= 1
-            search_list = tpb_parse_search(tpb_get_search(
-                mirror,
-                search_text,
-                page=page,
-                category=category.id
-            ))
+            search_list = new_search()
             reset_maxlen()
             max_index = len(search_list) - 1
         elif c == ord('s'):
@@ -366,22 +364,12 @@ def main(screen: 'curses._CursesWindow'):
             curses.curs_set(0)
             current_index = 0
             page = 0
-            search_list = tpb_parse_search(tpb_get_search(
-                mirror,
-                search_text,
-                page=page,
-                category=category.id,
-            ))
+            search_list = new_search()
             reset_maxlen()
             max_index = len(search_list) - 1
         elif c == ord('r'):
             page = 1
-            search_list = tpb_parse_search(tpb_get_search(
-                mirror,
-                search_text,
-                page=page,
-                category=category.id
-            ))
+            search_list = new_search()
             reset_maxlen()
             max_index = len(search_list) - 1
         elif c == ord('c'):
