@@ -24,8 +24,8 @@ class TorrentItems(object):
         self.max_tmn = max(self.max_tmn, len(torrentitem.magnet))
         self.max_tdt = max(self.max_tdt, len(torrentitem.date))
         self.max_tsz = max(self.max_tsz, len(torrentitem.size))
-        self.max_tsd = max(self.max_tsd, len(torrentitem.seeder))
-        self.max_tlc = max(self.max_tlc, len(torrentitem.leecher))
+        self.max_tsd = max(self.max_tsd, len(torrentitem.seeders))
+        self.max_tlc = max(self.max_tlc, len(torrentitem.leechers))
         self.max_aln = max(self.max_aln, len(torrentitem.author_link))
         self.max_anm = max(self.max_anm, len(torrentitem.author_name))
 

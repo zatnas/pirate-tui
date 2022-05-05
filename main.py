@@ -371,8 +371,8 @@ def main(screen: 'curses._CursesWindow'):
             win2.addstr(f'{item.subcategory:8s} │ ', attribute)
             win2.addstr(f'{item.category:17s} │ ', attribute)
             win2.addstr(i+3, screen_x - 2 - len(SIZE_TEXT) - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f'│ {item.size:{len(SIZE_TEXT)}s} ', attribute)
-            win2.addstr(i+3, screen_x - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.seeder:{len(SEEDERS_TEXT)}s} ', attribute)
-            win2.addstr(i+3, screen_x - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.leecher:{len(LEECHERS_TEXT)}s} ', attribute)
+            win2.addstr(i+3, screen_x - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.seeders:{len(SEEDERS_TEXT)}s} ', attribute)
+            win2.addstr(i+3, screen_x - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.leechers:{len(LEECHERS_TEXT)}s} ', attribute)
             name_line = 0
             for name_part in [item.name[x:x+title_maxlen] for x in range(0, len(item.name), title_maxlen)]:
                 if name_line == 0:

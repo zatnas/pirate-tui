@@ -7,8 +7,8 @@ class TorrentItem(object):
         self.magnet: str = groupdict["torrent_magnet"]
         self.date: str = groupdict["torrent_date"]
         self.size: str = groupdict["torrent_size"]
-        self.seeder: str = groupdict["torrent_seeder"]
-        self.leecher: str = groupdict["torrent_leecher"]
+        self.seeders: str = groupdict["torrent_seeder"]
+        self.leechers: str = groupdict["torrent_leecher"]
         _ = groupdict["author_link"]
         self.author_link: str = _
         if not _:
