@@ -227,6 +227,20 @@ def select_category(
             return category
 
 
+CATEGORY_TEXT = f"Category"
+SUBCATEGORY_TEXT = f"Sub-Category"
+TITLE_TEXT = f"Title"
+SIZE_TEXT = f"Size"
+SEEDERS_TEXT = f"Seeders"
+LEECHERS_TEXT = f"Leechers"
+CATEGORY_TEXT = f"{CATEGORY_TEXT:{len(CATEGORY_TEXT)}s}"
+SUBCATEGORY_TEXT = f"{SUBCATEGORY_TEXT:{17}s}"
+TITLE_TEXT = f"{TITLE_TEXT:{len(TITLE_TEXT)}s}"
+SIZE_TEXT = f"{SIZE_TEXT:{11}s}"
+SEEDERS_TEXT = f"{SEEDERS_TEXT:{len(SEEDERS_TEXT)}s}"
+LEECHERS_TEXT = f"{LEECHERS_TEXT:{len(LEECHERS_TEXT)}s}"
+
+
 def main(screen: 'curses._CursesWindow'):
     mirror_file = FILENAMES["mirror"]
     search_file = FILENAMES["search"]
@@ -320,16 +334,64 @@ def main(screen: 'curses._CursesWindow'):
     current_index = 0
     max_index = len(search_list) - 1
     while True:
-        for i, item in enumerate(search_list):
-            selected_item = i == current_index
+        lhs_text, lhs_brdr, rhs_text, rhs_brdr = "", "", "", ""
+        lhs_text += f"{CATEGORY_TEXT}"
+        lhs_text += f" │ "
+        lhs_text += f"{SUBCATEGORY_TEXT}"
+        lhs_text += f" │ "
+        lhs_text += f"{TITLE_TEXT}"
+        lhs_brdr += f"{'─'*len(CATEGORY_TEXT)}"
+        lhs_brdr += f"─┼─"
+        lhs_brdr += f"{'─'*len(SUBCATEGORY_TEXT)}"
+        lhs_brdr += f"─┼─"
+        lhs_brdr += f"{'─'*len(TITLE_TEXT)}"
+        rhs_text += f"│ "
+        rhs_text += f"{SIZE_TEXT}"
+        rhs_text += f" │ "
+        rhs_text += f"{SEEDERS_TEXT}"
+        rhs_text += f" │ "
+        rhs_text += f"{LEECHERS_TEXT}"
+        rhs_brdr += f"┼─"
+        rhs_brdr += f"{'─'*len(SIZE_TEXT)}"
+        rhs_brdr += f"─┼─"
+        rhs_brdr += f"{'─'*len(SEEDERS_TEXT)}"
+        rhs_brdr += f"─┼─"
+        rhs_brdr += f"{'─'*len(LEECHERS_TEXT)}"
+        title_maxlen = screen_x - len(lhs_text) - len(rhs_text)
+        win2.addstr(1, 2, lhs_text)
+        win2.addstr(2, 2, lhs_brdr)
+        win2.addstr(1, screen_x - len(rhs_text) - 2, rhs_text)
+        win2.addstr(2, screen_x - len(rhs_brdr) - 2, rhs_brdr)
+        win2.addstr(2, 2 + len(lhs_brdr), "─" * (screen_x - len(lhs_brdr) - len(rhs_brdr) - 2 - 2))
+        i = 0
+        for item in search_list:
+            selected_item = item == search_list[current_index]
             attribute = curses.A_BOLD if selected_item else 0
-            win2.addstr(i+1, 2, "")
-            win2.addstr(f'{item.subcategory:{max_tscat}} │ ', attribute)
-            win2.addstr(f'{item.category:{max_tcat}} │ ', attribute)
-            win2.addstr(f'{item.name:{max_tname}} ', attribute)
-            win2.addstr(i+1, screen_x - 11 - search_list.max_tsz - search_list.max_tsd - search_list.max_tlc, f' │ {item.size:{max_tsize}} ', attribute)
-            win2.addstr(i+1, screen_x - 7 - search_list.max_tsd - search_list.max_tlc, f'│ {item.seeder:{max_tseeder}} ', attribute)
-            win2.addstr(i+1, screen_x - 4 - search_list.max_tlc, f'│ {item.leecher:{max_tleecher}} ', attribute)
+            win2.addstr(i+3, 2, "")
+            win2.addstr(f'{item.subcategory:8s} │ ', attribute)
+            win2.addstr(f'{item.category:17s} │ ', attribute)
+            win2.addstr(i+3, screen_x - 2 - len(SIZE_TEXT) - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f'│ {item.size:{len(SIZE_TEXT)}s} ', attribute)
+            win2.addstr(i+3, screen_x - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.seeder:{len(SEEDERS_TEXT)}s} ', attribute)
+            win2.addstr(i+3, screen_x - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.leecher:{len(LEECHERS_TEXT)}s} ', attribute)
+            name_line = 0
+            for name_part in [item.name[x:x+title_maxlen] for x in range(0, len(item.name), title_maxlen)]:
+                if name_line == 0:
+                    win2.addstr(i+3, 33, name_part, attribute)
+                else:
+                    win2.addstr(i+3, 11, '│', attribute)
+                    win2.addstr(i+3, 31, '│', attribute)
+                    win2.addstr(i+3, 33, name_part, attribute)
+                    win2.addstr(i+3, screen_x - 2 - len(SIZE_TEXT) - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, '│', attribute)
+                    win2.addstr(i+3, screen_x - 2 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, '│', attribute)
+                    win2.addstr(i+3, screen_x - 2 - len(LEECHERS_TEXT) - 2, '│', attribute)
+                if len(name_part) < title_maxlen:
+                    break
+                name_line += 1
+                if len(item.name) > title_maxlen * name_line:
+                    i += 1
+                else:
+                    break
+            i += 1
         win1.addstr(1, 1, str(c))
         win1.addstr(2, 2, "Search: ")
         win1.addstr(6, 2, "Category: ")
