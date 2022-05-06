@@ -80,8 +80,8 @@ def tpb_get_search(
 ):
     search_file = FILENAMES["search"]
     lastsearch_file = FILENAMES["lastsearch"]
-    search = urllib.parse.quote(search)
-    url = f'{hostname}/search/{search}/{page}/{sort}/{category}'
+    search_url = urllib.parse.quote(search)
+    url = f'{hostname}/search/{search_url}/{page}/{sort}/{category}'
     r = requests.get(url)
     file_write(lastsearch_file, search)
     return file_write(search_file, r.text)
