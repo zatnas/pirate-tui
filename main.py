@@ -170,22 +170,21 @@ def select_category(
 
     win_sy = 7
     win_sx = 12
-    win = curses.newwin(10, cols - 14, win_sy, win_sx)
+    win = Window(10, cols - 14, win_sy, win_sx)
 
     index_category = 0
     offset_category = 0
     max_index_category = len(category_list) - win_sy - 2
     while True:
         lastcategory_file = FILENAMES["lastcategory"]
-        win = curses.newwin(10, cols - 14, 5, 12)
-        _ = Window(win, True)
-        _.draw_border()
+        win = Window(10, cols - 14, 5, 12, border=True)
+        win.draw_border()
         for i in range(offset_category, offset_category + 8):
             screen_index = i - offset_category
             selected = screen_index == index_category
             attrib = curses.A_BOLD if selected else 0
             category = category_list[i]
-            win.addstr(screen_index+1, 1, category.name, attrib)
+            win.addstr(screen_index, 1, category.name, attrib)
         win.refresh()
         c = screen.getch()
         win.clear()
@@ -306,19 +305,17 @@ def main(screen: 'curses._CursesWindow'):
 
     screen_y, screen_x = screen.getmaxyx()
 
-    win1 = curses.newwin(9, screen_x, 0, 0)
-    win2 = curses.newwin(screen_y - 9, screen_x, 9, 0)
-    searchcontainer = curses.newwin(3, screen_x - 14, 1, 12)
-    searchwin = curses.newwin(1, screen_x - 16, 2, 13)
-    searchbox = Textbox(searchwin)
-    categorywin = curses.newwin(3, screen_x - 14, 5, 12)
+    win1 = Window(9, screen_x, 0, 0, border=True)
+    win2 = Window(screen_y - 9, screen_x, 9, 0, border=True)
+    searchwin = Window(3, screen_x - 16, 1, 12, border=True)
+    searchbox = Textbox(searchwin.window)
+    categorywin = Window(3, screen_x - 14, 5, 12, border=True)
 
     windows = [
-        Window(win1, True),
-        Window(win2, True),
-        Window(searchcontainer, True),
-        Window(searchwin, False),
-        Window(categorywin, True),
+        win1,
+        win2,
+        searchwin,
+        categorywin,
     ]
 
     def draw_windows():
@@ -335,11 +332,13 @@ def main(screen: 'curses._CursesWindow'):
     max_index = len(search_list) - 1
     while True:
         lhs_text, lhs_brdr, rhs_text, rhs_brdr = "", "", "", ""
+        lhs_text += f" "
         lhs_text += f"{CATEGORY_TEXT}"
         lhs_text += f" │ "
         lhs_text += f"{SUBCATEGORY_TEXT}"
         lhs_text += f" │ "
         lhs_text += f"{TITLE_TEXT}"
+        lhs_brdr += f"─"
         lhs_brdr += f"{'─'*len(CATEGORY_TEXT)}"
         lhs_brdr += f"─┼─"
         lhs_brdr += f"{'─'*len(SUBCATEGORY_TEXT)}"
@@ -351,39 +350,42 @@ def main(screen: 'curses._CursesWindow'):
         rhs_text += f"{SEEDERS_TEXT}"
         rhs_text += f" │ "
         rhs_text += f"{LEECHERS_TEXT}"
+        rhs_text += f" "
         rhs_brdr += f"┼─"
         rhs_brdr += f"{'─'*len(SIZE_TEXT)}"
         rhs_brdr += f"─┼─"
         rhs_brdr += f"{'─'*len(SEEDERS_TEXT)}"
         rhs_brdr += f"─┼─"
         rhs_brdr += f"{'─'*len(LEECHERS_TEXT)}"
-        title_maxlen = screen_x - len(lhs_text) - len(rhs_text)
-        win2.addstr(1, 2, lhs_text)
-        win2.addstr(2, 2, lhs_brdr)
-        win2.addstr(1, screen_x - len(rhs_text) - 2, rhs_text)
-        win2.addstr(2, screen_x - len(rhs_brdr) - 2, rhs_brdr)
-        win2.addstr(2, 2 + len(lhs_brdr), "─" * (screen_x - len(lhs_brdr) - len(rhs_brdr) - 2 - 2))
+        rhs_brdr += f"─"
+        title_maxlen = win2.sx - len(lhs_text) - len(rhs_text) + 4
+        win2.addstr(0, 0, lhs_text)
+        win2.addstr(1, 0, lhs_brdr)
+        win2.addstr(0, win2.sx - len(rhs_text), rhs_text)
+        win2.addstr(1, win2.sx - len(rhs_brdr), rhs_brdr)
+        win2.addstr(1, len(lhs_brdr), "─" * (win2.sx - len(lhs_brdr) - len(rhs_brdr)))
         i = 0
         for item in search_list:
             selected_item = item == search_list[current_index]
             attribute = curses.A_BOLD if selected_item else 0
-            win2.addstr(i+3, 2, "")
-            win2.addstr(f'{item.subcategory:8s} │ ', attribute)
-            win2.addstr(f'{item.category:17s} │ ', attribute)
-            win2.addstr(i+3, screen_x - 2 - len(SIZE_TEXT) - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f'│ {item.size:{len(SIZE_TEXT)}s} ', attribute)
-            win2.addstr(i+3, screen_x - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.seeders:{len(SEEDERS_TEXT)}s} ', attribute)
-            win2.addstr(i+3, screen_x - 3 - len(LEECHERS_TEXT) - 2, f' │ {item.leechers:{len(LEECHERS_TEXT)}s} ', attribute)
+            win2.addstr(i+2, 1, "")
+            win2.addstr(f'{item.subcategory[0:8]:8s} │ ', attribute)
+            win2.addstr(f'{item.category[0:17]:17s} │ ', attribute)
+            win2.addstr(i+2, win2.sx - len(rhs_brdr), "│ ", attribute)
+            win2.addstr(f'{item.size[0:len(SIZE_TEXT)]:{len(SIZE_TEXT)}s} │ ', attribute)
+            win2.addstr(f'{item.seeders[0:len(SEEDERS_TEXT)]:{len(SEEDERS_TEXT)}s} │ ', attribute)
+            win2.addstr(f'{item.leechers[0:len(LEECHERS_TEXT)]:{len(LEECHERS_TEXT)}s}', attribute)
             name_line = 0
             for name_part in [item.name[x:x+title_maxlen] for x in range(0, len(item.name), title_maxlen)]:
                 if name_line == 0:
-                    win2.addstr(i+3, 33, name_part, attribute)
+                    win2.addstr(i+2, 32, name_part, attribute)
                 else:
-                    win2.addstr(i+3, 11, '│', attribute)
-                    win2.addstr(i+3, 31, '│', attribute)
-                    win2.addstr(i+3, 33, name_part, attribute)
-                    win2.addstr(i+3, screen_x - 2 - len(SIZE_TEXT) - 3 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, '│', attribute)
-                    win2.addstr(i+3, screen_x - 2 - len(SEEDERS_TEXT) - 3 - len(LEECHERS_TEXT) - 2, '│', attribute)
-                    win2.addstr(i+3, screen_x - 2 - len(LEECHERS_TEXT) - 2, '│', attribute)
+                    win2.addstr(i+2, 1, "", attribute)
+                    win2.addstr(" "*len(CATEGORY_TEXT) + " │ ", attribute)
+                    win2.addstr(" "*len(SUBCATEGORY_TEXT) + " │ ", attribute)
+                    win2.addstr(f"{name_part:{title_maxlen}s} │ ", attribute)
+                    win2.addstr(" "*len(SIZE_TEXT) + " │ ", attribute)
+                    win2.addstr(" "*len(SEEDERS_TEXT) + " │ ", attribute)
                 if len(name_part) < title_maxlen:
                     break
                 name_line += 1
@@ -392,11 +394,11 @@ def main(screen: 'curses._CursesWindow'):
                 else:
                     break
             i += 1
-        win1.addstr(1, 1, str(c))
-        win1.addstr(2, 2, "Search: ")
-        win1.addstr(6, 2, "Category: ")
+        win1.addstr(0, 0, str(c))
+        win1.addstr(1, 4, "Search: ")
+        win1.addstr(5, 2, "Category: ")
         searchwin.addstr(0, 0, search_text)
-        categorywin.addstr(1, 1, category.name)
+        categorywin.addstr(category.name)
         draw_windows()
         c = screen.getch()
         clear_windows()
