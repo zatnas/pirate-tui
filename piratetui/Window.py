@@ -26,8 +26,8 @@ class Window():
 
     def clear(self):
         if self.border:
-            self.border_window.refresh()
-        self.window.clear()
+            self.border_window.erase()
+        self.window.erase()
 
     def draw_border(self, ignore_property: bool = False):
         if not self.border and not ignore_property:
