@@ -262,14 +262,18 @@ def main(screen: 'curses._CursesWindow'):
     else:
         piratesearch = tpb_get_search(mirror, search_text)
 
-    category = Category()
     if file_exists(lastcategory_file):
-        _ = json.loads(file_read(lastcategory_file))
-        category.name = _["name"]
-        category.id = _["id"]
+        category_data = json.loads(file_read(lastcategory_file))
     else:
-        category.name = "Any"
-        category.id = "0"
+        category_data = {
+            "id": "0",
+            "name": "Any",
+        }
+    category = Category(
+        **category_data,
+        link="",
+        category_type=""
+    )
     page = 1
     if file_exists(category_file):
         piratecategory = file_read(category_file)
