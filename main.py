@@ -426,10 +426,12 @@ def main(screen: 'curses._CursesWindow'):
             reset_maxlen()
             max_index = len(search_list) - 1
         elif c == ord('s'):
-            searchwin.clear()
-            searchwin.refresh()
             curses.curs_set(1)
             search_text = searchbox.edit()
+            searchwin.clear()
+            searchwin.draw_border()
+            searchwin.addstr(0, 1, search_text)
+            searchwin.refresh()
             curses.curs_set(0)
             current_index = 0
             page = 0
