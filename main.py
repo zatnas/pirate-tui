@@ -257,6 +257,7 @@ def main(screen: 'curses._CursesWindow'):
         search_text = urllib.parse.unquote(file_read(lastsearch_file))
     else:
         search_text = "spiderman"
+
     if file_exists(search_file):
         piratesearch = file_read(search_file)
     else:
