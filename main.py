@@ -254,7 +254,7 @@ def main(screen: 'curses._CursesWindow'):
         mirror = tpb_get_proxy()
 
     if file_exists(lastsearch_file):
-        search_text = file_read(lastsearch_file)
+        search_text = urllib.parse.unquote(file_read(lastsearch_file))
     else:
         search_text = "spiderman"
     if file_exists(search_file):

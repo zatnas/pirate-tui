@@ -1,7 +1,65 @@
+import curses
+import curses.ascii
 import curses.textpad
 
 
 class Textbox(curses.textpad.Textbox):
+    def __init__(
+        self,
+        win: 'curses._CursesWindow',
+        insert_mode=False
+    ):
+        self.win = win
+        self.insert_mode = insert_mode
+        self._update_max_yx()
+        self.stripspaces = 1
+        self.lastcmd = None
+        win.keypad(1)
+
+    def _update_max_yx(self) -> None:
+        maxy, maxx = self.win.getmaxyx()
+        self.maxy = maxy - 1
+        self.maxx = maxx - 1
+
+    def _end_of_line(self, y):
+        """Go to the location of the first blank on the given line,
+        returning the index of the last non-blank character."""
+        self._update_max_yx()
+        last = self.maxx
+        while True:
+            if curses.ascii.ascii(self.win.inch(y, last)) != curses.ascii.SP:
+                last = min(self.maxx, last+1)
+                break
+            elif last == 0:
+                break
+            last = last - 1
+        return last
+
+    def _insert_printable_char(self, ch):
+        self._update_max_yx()
+        (y, x) = self.win.getyx()
+        backyx = None
+        while y < self.maxy or x < self.maxx:
+            if self.insert_mode:
+                oldch = self.win.inch()
+            # The try-catch ignores the error we trigger from some curses
+            # versions by trying to write into the lowest-rightmost spot
+            # in the window.
+            try:
+                self.win.addch(ch)
+            except curses.error:
+                pass
+            if not self.insert_mode or not curses.ascii.isprint(oldch):
+                break
+            ch = oldch
+            (y, x) = self.win.getyx()
+            # Remember where to put the cursor back since we are in insert_mode
+            if backyx is None:
+                backyx = y, x
+
+        if backyx is not None:
+            self.win.move(*backyx)
+
     def do_command(self, ch):
         "Process a single editing command."
         self._update_max_yx()
@@ -66,3 +124,10 @@ class Textbox(curses.textpad.Textbox):
                 if x > self._end_of_line(y-1):
                     self.win.move(y-1, self._end_of_line(y-1))
         return 1
+
+    def gather(self):
+        "Collect and return the contents of the window."
+        return super().gather()
+
+    def edit(self, validate=None):
+        return super().edit(validate=validate)
