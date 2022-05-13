@@ -1,9 +1,8 @@
 import curses
 import curses.ascii
-import curses.textpad
 
 
-class Textbox(curses.textpad.Textbox):
+class Textbox():
     def __init__(
         self,
         win: 'curses._CursesWindow',
@@ -127,7 +126,30 @@ class Textbox(curses.textpad.Textbox):
 
     def gather(self):
         "Collect and return the contents of the window."
-        return super().gather()
+        result = ""
+        self._update_max_yx()
+        for y in range(self.maxy+1):
+            self.win.move(y, 0)
+            stop = self._end_of_line(y)
+            if stop == 0 and self.stripspaces:
+                continue
+            for x in range(self.maxx+1):
+                if self.stripspaces and x > stop:
+                    break
+                result = result + chr(curses.ascii.ascii(self.win.inch(y, x)))
+            if self.maxy > 0:
+                result = result + "\n"
+        return result
 
     def edit(self, validate=None):
-        return super().edit(validate=validate)
+        "Edit in the widget window and collect the results."
+        while 1:
+            ch = self.win.getch()
+            if validate:
+                ch = validate(ch)
+            if not ch:
+                continue
+            if not self.do_command(ch):
+                break
+            self.win.refresh()
+        return self.gather()
